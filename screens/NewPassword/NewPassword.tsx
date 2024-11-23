@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
+import { View, Text, TouchableOpacity, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { styles } from './style';
 
@@ -26,11 +26,35 @@ export default function NewPassword({ navigate }) {
       setIsPasswordMatch(password === input && input.length >= 8); 
   };
 
-  const handleLink = () => {
-    if (isPasswordMatch) {
-      navigate('Welcome');
-    } else {
+  const handleLink = async () => {
+    if (!isPasswordMatch) {
       alert("Passwords do not match");
+      return;
+    }
+
+    try {
+      const response = await fetch('http://localhost:3333/api/new-password', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          password, 
+          confirmPassword,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        Alert.alert("Success", "Password reset successfully!");
+        navigate('Welcome');
+      } else {
+        Alert.alert("Error", data.message || "Something went wrong!");
+      }
+    } catch (error) {
+      console.error('Erro ao redefinir senha:', error);
+      Alert.alert("Error", "Failed to reset password. Please try again.");
     }
   };
 
@@ -58,17 +82,17 @@ export default function NewPassword({ navigate }) {
         placeholder="******"
         keyboardType="default"
         validate={isPasswordValid && isPasswordMatch}
-  />
+      />
 
       <Text style={styles.textinput}>Confirm Password</Text>
-        <CustomInput
-          type="password"
-          value={confirmPassword}
-          onChangeText={handleConfirmPasswordChange}
-          placeholder="******"
-          keyboardType="default"
-          validate={isPasswordMatch}
-  />
+      <CustomInput
+        type="password"
+        value={confirmPassword}
+        onChangeText={handleConfirmPasswordChange}
+        placeholder="******"
+        keyboardType="default"
+        validate={isPasswordMatch}
+      />
 
       <Button text={'Reset Password'} onpress={handleLink} />
     </View>

@@ -1,40 +1,52 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
+import { View, Text, TouchableOpacity, Alert } from 'react-native';
 import * as Progress from 'react-native-progress';
 import { Ionicons, FontAwesome } from '@expo/vector-icons';
 
-import questionsData from '../../assets/questions.json';
 import { styles } from './style';
 
 const Quiz = ({ navigate }) => {
-  const [questions, setQuestions] = useState([]);
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  const [questions, setQuestions] = useState([]); 
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0); 
   const [selectedOption, setSelectedOption] = useState(null);
-  const [isCorrect, setIsCorrect] = useState(null);
-  const [lives, setLives] = useState(3); // Número inicial de vidas
+  const [isCorrect, setIsCorrect] = useState(null); 
+  const [lives, setLives] = useState(3); 
 
   useEffect(() => {
-    setQuestions(questionsData);
+    const fetchQuestions = async () => {
+      try {
+        const response = await fetch('http://localhost:3333/api/quiz'); 
+        const data = await response.json();
+        
+        if (data && data.questions) {
+          setQuestions(data.questions);
+        } else {
+          Alert.alert('Erro', 'Não foi possível carregar as perguntas.');
+        }
+      } catch (error) {
+        console.error('Erro ao carregar as perguntas:', error);
+        Alert.alert('Erro', 'Falha ao carregar as perguntas. Tente novamente.');
+      }
+    };
+
+    fetchQuestions();
   }, []);
 
-  // Redireciona para a tela Home quando as vidas acabam
   useEffect(() => {
     if (lives === 0) {
       navigate('Home');
     }
   }, [lives]);
 
-  // Verifica se terminou o quiz
   useEffect(() => {
-  if (
-    currentQuestionIndex === questions.length && // Verifica se todas as perguntas foram respondidas
-    questions.length > 0 && // Certifica-se de que há perguntas carregadas
-    lives > 0 // Garante que o jogador ainda tenha vidas
-  ) {
-    navigate('Success'); // Redireciona para a tela de sucesso
-  }
-}, [currentQuestionIndex, questions, lives]);
-
+    if (
+      currentQuestionIndex === questions.length &&
+      questions.length > 0 &&
+      lives > 0 
+    ) {
+      navigate('Success');
+    }
+  }, [currentQuestionIndex, questions, lives]);
 
   const handleAnswer = (option, correctAnswer) => {
     setSelectedOption(option);
@@ -42,13 +54,12 @@ const Quiz = ({ navigate }) => {
       setIsCorrect(true);
     } else {
       setIsCorrect(false);
-      setLives((prevLives) => Math.max(prevLives - 1, 0)); // Reduz vidas ao errar
+      setLives((prevLives) => Math.max(prevLives - 1, 0));
     }
 
-    // Aguarda um momento e avança para a próxima pergunta
     setTimeout(() => {
       setCurrentQuestionIndex((prevIndex) => prevIndex + 1);
-      setSelectedOption(null); // Reseta a seleção para a próxima pergunta
+      setSelectedOption(null);
       setIsCorrect(null);
     }, 1000);
   };
@@ -81,7 +92,7 @@ const Quiz = ({ navigate }) => {
               key={index}
               style={optionStyle}
               onPress={() => handleAnswer(option, correctAnswer)}
-              disabled={selectedOption !== null} // Desabilita os botões após a seleção
+              disabled={selectedOption !== null}
             >
               <Text style={styles.optionText}>{option}</Text>
             </TouchableOpacity>

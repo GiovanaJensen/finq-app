@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
+import { View, Text, TouchableOpacity, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { styles } from './style';
 
@@ -21,18 +21,6 @@ export default function Registration({ navigate }) {
   const [isPasswordValid, setIsPasswordValid] = useState(false);
   const [isPasswordMatch, setIsPasswordMatch] = useState(false);
   const [isEmailValid, setIsEmailValid] = useState(false);
-
-  const handleNext = () => {
-    if (step === 5) {
-      navigate('WelcomeRegister');
-    } else {
-      setStep(step + 1);
-    }
-  };
-
-  const handlePrev = () => {
-    if (step > 1) setStep(step - 1);
-  };
 
   const handleInputChange = (field, value) => {
     setFormData({ ...formData, [field]: value });
@@ -62,6 +50,56 @@ export default function Registration({ navigate }) {
         : [...prevData.preferences, preference];
       return { ...prevData, preferences };
     });
+  };
+
+  const handleNext = () => {
+    if (step === 5) {
+      handleSubmit();  
+    } else {
+      setStep(step + 1);
+    }
+  };
+
+  const handlePrev = () => {
+    if (step > 1) setStep(step - 1);
+  };
+
+  const handleSubmit = async () => {
+    if (!isPasswordMatch || !isEmailValid) {
+      Alert.alert('Error', 'Please make sure all fields are filled correctly.');
+      return;
+    }
+
+    const data = {
+      name: formData.name,
+      email: formData.email,
+      phone: formData.phone,
+      university: formData.university,
+      password: formData.password,
+      preferences: formData.preferences,
+    };
+
+    try {
+      const response = await fetch('http://localhost:3333/api/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        Alert.alert('Success', 'Registration successful!');
+        navigate('WelcomeRegister');
+      } else {
+        Alert.alert('Error', result.message || 'Something went wrong. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error during registration:', error);
+      Alert.alert('Error', 'Failed to register. Please try again.');
+    }
   };
 
   const renderContent = () => {
@@ -146,7 +184,7 @@ export default function Registration({ navigate }) {
       case 5:
         return (
           <View>
-            <Text style={[styles.title, step == 5 && { color: '#FFF' }]}>
+            <Text style={[styles.title, step === 5 && { color: '#FFF' }]}>
               🧠 Select what you want to learn here
             </Text>
             {['Investment Banking', 'Equity Research', 'Credit', 'Private Equity', 'Venture Capital', 'Capital Markets'].map((preference) => (
@@ -172,10 +210,7 @@ export default function Registration({ navigate }) {
   };
 
   return (
-    <View style={[
-      styles.container,
-      step == 5 && { backgroundColor: COLORS.purpleDark }
-    ]}>
+    <View style={[styles.container, step === 5 && { backgroundColor: COLORS.purpleDark }]}>
       <View style={styles.progressContainer}>
         {step > 1 && (
           <TouchableOpacity
